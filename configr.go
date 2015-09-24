@@ -25,7 +25,7 @@ type Manager interface {
 // key, anytime the config key is found in a Source it's value is validated.
 type Validator func(interface{}) error
 
-type Parser interface {
+type Config interface {
 	Parse() error
 	Parsed() bool
 	MustParse()
