@@ -72,7 +72,7 @@ func Test_ItSetsValue(t *testing.T) {
 	config := New()
 
 	assert.NoError(t, config.set("test", 1))
-	assert.Equal(t, 1, config.values["test"].(int))
+	assert.Equal(t, 1, config.cache["test"].(int))
 }
 
 func Test_ItReturnsErrorOnFirstFailingValidator(t *testing.T) {
@@ -148,7 +148,7 @@ func Test_ItPopulatesConfigrValuesFromSource(t *testing.T) {
 	config.AddSource(s1)
 	config.Parse()
 
-	assert.Equal(t, expectedValues, config.values)
+	assert.Equal(t, expectedValues, config.cache)
 }
 
 func Test_ItReturnsErrorFromSet(t *testing.T) {
@@ -194,7 +194,7 @@ func Test_ItOverwritesValuesFromHigherPrioritySources(t *testing.T) {
 	config.AddSource(s2)
 	config.Parse()
 
-	assert.Equal(t, expectedValues, config.values)
+	assert.Equal(t, expectedValues, config.cache)
 }
 
 func Test_ItDoesntPanicOnValueNotRegisteredErrors(t *testing.T) {
@@ -216,7 +216,7 @@ func Test_ItDoesntPanicOnValueNotRegisteredErrors(t *testing.T) {
 
 func Test_ItRetrivesNestedValues(t *testing.T) {
 	config := New()
-	config.values = map[string]interface{}{
+	config.cache = map[string]interface{}{
 		"t1": map[string]interface{}{
 			"t11": 1,
 		},
@@ -319,7 +319,7 @@ func Test_ItRespectsNestedValuesFromMultipleSources(t *testing.T) {
 	config.AddSource(s2)
 	config.Parse()
 
-	assert.Equal(t, expectedValues, config.values)
+	assert.Equal(t, expectedValues, config.cache)
 }
 
 func Test_ItHandlesPathStyleKeysToSetValues(t *testing.T) {
@@ -343,7 +343,7 @@ func Test_ItHandlesPathStyleKeysToSetValues(t *testing.T) {
 	assert.NoError(t, config.set("t1.t12.t121", 2))
 	assert.NoError(t, config.set("t2.t21", 3.0))
 
-	assert.Equal(t, expectedValues, config.values)
+	assert.Equal(t, expectedValues, config.cache)
 }
 
 func Test_ItErrorsIfYouTryGetBeforeParsing(t *testing.T) {

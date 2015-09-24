@@ -52,13 +52,12 @@ type Encoder interface {
 
 type Configr struct {
 	valueValidators    map[string][]Validator
-	registeredValues   map[string]string
-	requiredValues     map[string]struct{}
+	registeredKeys     map[string]string
+	requiredKeys       map[string]struct{}
 	defaultValues      map[string]interface{}
-	values             map[string]interface{}
+	cache              map[string]interface{}
 	sources            []Source
 	parsed             bool
-	configFilePath     string
 	keyDelimeter       string
 	descriptionWrapper string
 }
@@ -66,10 +65,10 @@ type Configr struct {
 func New() *Configr {
 	return &Configr{
 		valueValidators:    make(map[string][]Validator),
-		registeredValues:   make(map[string]string),
-		requiredValues:     make(map[string]struct{}),
+		registeredKeys:     make(map[string]string),
+		requiredKeys:       make(map[string]struct{}),
 		defaultValues:      make(map[string]interface{}),
-		values:             make(map[string]interface{}),
+		cache:              make(map[string]interface{}),
 		keyDelimeter:       ".",
 		descriptionWrapper: "***",
 	}
@@ -105,7 +104,7 @@ func RegisterKey(name, description string, defaultVal interface{}, validators ..
 }
 func (c *Configr) RegisterKey(name, description string, defaultVal interface{}, validators ...Validator) {
 	name = strings.ToLower(name)
-	c.registeredValues[name] = description
+	c.registeredKeys[name] = description
 
 	if defaultVal != nil {
 		c.defaultValues[name] = defaultVal
@@ -124,7 +123,7 @@ func RequireKey(name, description string, validators ...Validator) {
 }
 func (c *Configr) RequireKey(name, description string, validators ...Validator) {
 	name = strings.ToLower(name)
-	c.requiredValues[name] = struct{}{}
+	c.requiredKeys[name] = struct{}{}
 	c.RegisterKey(name, description, nil, validators...)
 }
 
@@ -166,7 +165,7 @@ func (c *Configr) Parse() error {
 func (c *Configr) checkRequiredKeys() error {
 	missingKeys := []string{}
 
-	for requiredKey := range c.requiredValues {
+	for requiredKey := range c.requiredKeys {
 		if _, err := c.get(requiredKey); err != nil {
 			missingKeys = append(missingKeys, requiredKey)
 		}
@@ -213,7 +212,7 @@ func (c *Configr) set(key string, value interface{}) error {
 		return err
 	}
 
-	c.values = c.mergeMap(key, value, c.values)
+	c.cache = c.mergeMap(key, value, c.cache)
 
 	return nil
 }
@@ -309,12 +308,12 @@ func (c *Configr) Get(key string) (interface{}, error) {
 
 func (c *Configr) get(key string) (interface{}, error) {
 	key = strings.ToLower(key)
-	if value, found := c.values[key]; found {
+	if value, found := c.cache[key]; found {
 		return value, nil
 	}
 
 	path := strings.Split(key, c.keyDelimeter)
-	parent, found := c.values[path[0]]
+	parent, found := c.cache[path[0]]
 	if found {
 		if reflect.TypeOf(parent).Kind() == reflect.Map {
 			if val := searchMap(cast.ToStringMap(parent), path[1:]); val != nil {
@@ -417,12 +416,12 @@ func GenerateBlank(e Encoder) ([]byte, error) {
 	return globalConfigr.GenerateBlank(e)
 }
 func (c *Configr) GenerateBlank(e Encoder) ([]byte, error) {
-	if len(c.registeredValues) == 0 {
+	if len(c.registeredKeys) == 0 {
 		return []byte{}, ErrNoRegisteredValues
 	}
 
 	blankMap := make(map[string]interface{})
-	for key, description := range c.registeredValues {
+	for key, description := range c.registeredKeys {
 		if defaultValue, found := c.defaultValues[key]; found {
 			blankMap = c.mergeMap(key, defaultValue, blankMap)
 		} else {
