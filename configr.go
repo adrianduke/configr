@@ -40,6 +40,7 @@ type Config interface {
 
 // Source is a source of configuration keys and values, calling unmarshal should
 // return a map[string]interface{} of all key/value pairs (nesting is supported)
+// with multiple types.
 type Source interface {
 	Unmarshal() (map[string]interface{}, error)
 }
@@ -94,10 +95,11 @@ func (e ErrRequiredKeysMissing) Error() string {
 	return fmt.Sprintf("configr: Missing required configuration values: %v", []string(e))
 }
 
-// RegisterValue registers a configuration key (name) along with a description
-// of what the configuration key does, a default value and optional validators
+// RegisterKey registers a configuration key (name) along with a description
+// of what the configuration key is for, a default value and optional validators
 //
-// name supports nested notation in the form of '.' delimitered keys, e.g.
+// name supports nested notation in the form of '.' delimitered keys (unless changed)
+// e.g.
 //     "user.age.month"
 func RegisterKey(name, description string, defaultVal interface{}, validators ...Validator) {
 	globalConfigr.RegisterKey(name, description, defaultVal, validators...)
