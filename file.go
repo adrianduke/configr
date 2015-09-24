@@ -28,7 +28,7 @@ type FileSource struct {
 var SupportedFileExtensions = []string{"json", "toml"}
 var ErrUnknownEncoding = errors.New("configr: Unable to determine file encoding, please set manually")
 
-var f *FileSource = NewFileSource("")
+var globalFileSource *FileSource = NewFileSource("")
 
 func NewFileSource(filePath string) *FileSource {
 	f := &FileSource{encoding: Unknown}
@@ -41,7 +41,7 @@ func NewFileSource(filePath string) *FileSource {
 // the encoding of the file using its extension. See SupportedFileExtensions for
 // a list of supported extensions
 func SetFilePath(path string) {
-	f.SetFilePath(path)
+	globalFileSource.SetFilePath(path)
 }
 func (f *FileSource) SetFilePath(path string) {
 	f.filePath = path
@@ -56,23 +56,22 @@ func (f *FileSource) SetFilePath(path string) {
 }
 
 func FilePath() string {
-	return f.FilePath()
+	return globalFileSource.FilePath()
 }
-
 func (f *FileSource) FilePath() string {
 	return f.filePath
 }
 
 // SetEncoding allows the caller to override the infered file encoding format
 func SetEncoding(encoding Encoding) {
-	f.SetEncoding(encoding)
+	globalFileSource.SetEncoding(encoding)
 }
 func (f *FileSource) SetEncoding(encoding Encoding) {
 	f.encoding = encoding
 }
 
 func Unmarshal() (map[string]interface{}, error) {
-	return f.Unmarshal()
+	return globalFileSource.Unmarshal()
 }
 func (f *FileSource) Unmarshal() (map[string]interface{}, error) {
 	var unmarshaller func([]byte, interface{}) error
@@ -101,7 +100,7 @@ func (f *FileSource) Unmarshal() (map[string]interface{}, error) {
 }
 
 func Marshal(v interface{}) ([]byte, error) {
-	return f.Marshal(v)
+	return globalFileSource.Marshal(v)
 }
 func (f *FileSource) Marshal(v interface{}) ([]byte, error) {
 	switch f.encoding {
