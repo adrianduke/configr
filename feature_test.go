@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	. "bitbucket.org/homemade/cin/configr"
+	. "github.com/adrianduke/configr"
 
 	"github.com/stretchr/testify/assert"
 )
