@@ -437,3 +437,10 @@ func (c *Configr) GenerateBlank(e Encoder) ([]byte, error) {
 func (c *Configr) wrapDescription(description string) string {
 	return strings.Join([]string{c.descriptionWrapper, description, c.descriptionWrapper}, " ")
 }
+
+func (c *Configr) SetKeyPathDelimeter(delimeter string) {
+	c.keyDelimeter = delimeter
+}
+func (c *Configr) SetDescriptionWrapper(wrapper string) {
+	c.descriptionWrapper = wrapper
+}
