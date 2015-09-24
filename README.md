@@ -1,0 +1,2 @@
+# configr
+Go configuration library
