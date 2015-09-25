@@ -1,7 +1,6 @@
-[![Build Status](https://travis-ci.org/adrianduke/configr.svg?branch=master)](https://travis-ci.org/adrianduke/configr) [![Coverage Status](https://coveralls.io/repos/adrianduke/configr/badge.svg?branch=master&service=github)](https://coveralls.io/github/adrianduke/configr?branch=master) [![GoDoc](https://godoc.org/github.com/adrianduke/configr?status.svg)](https://godoc.org/github.com/adrianduke/configr)
-===
-
 # configr
+
+[![Build Status](https://travis-ci.org/adrianduke/configr.svg?branch=master)](https://travis-ci.org/adrianduke/configr) [![Coverage Status](https://coveralls.io/repos/adrianduke/configr/badge.svg?branch=master&service=github)](https://coveralls.io/github/adrianduke/configr?branch=master) [![GoDoc](https://godoc.org/github.com/adrianduke/configr?status.svg)](https://godoc.org/github.com/adrianduke/configr)
 
 Configr provides an abstraction above configuration sources, allowing you to use a single interface to expect and get all your configuration values.
 
