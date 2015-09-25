@@ -19,6 +19,7 @@ type Manager interface {
 	AddSource(Source)
 
 	GenerateBlank(Encoder) ([]byte, error)
+	SetIsCaseSensitive(bool)
 }
 
 // Validator is a validation function which would be coupled with a configuration
@@ -61,6 +62,7 @@ type Configr struct {
 	parsed             bool
 	keyDelimeter       string
 	descriptionWrapper string
+	isCaseInsensitive  bool
 }
 
 func New() *Configr {
@@ -105,7 +107,9 @@ func RegisterKey(name, description string, defaultVal interface{}, validators ..
 	globalConfigr.RegisterKey(name, description, defaultVal, validators...)
 }
 func (c *Configr) RegisterKey(name, description string, defaultVal interface{}, validators ...Validator) {
-	name = strings.ToLower(name)
+	if c.isCaseInsensitive {
+		name = strings.ToLower(name)
+	}
 	c.registeredKeys[name] = description
 
 	if defaultVal != nil {
@@ -124,7 +128,9 @@ func RequireKey(name, description string, validators ...Validator) {
 	globalConfigr.RequireKey(name, description, validators...)
 }
 func (c *Configr) RequireKey(name, description string, validators ...Validator) {
-	name = strings.ToLower(name)
+	if c.isCaseInsensitive {
+		name = strings.ToLower(name)
+	}
 	c.requiredKeys[name] = struct{}{}
 	c.RegisterKey(name, description, nil, validators...)
 }
@@ -209,7 +215,9 @@ func (c *Configr) MustParse() {
 }
 
 func (c *Configr) set(key string, value interface{}) error {
-	key = strings.ToLower(key)
+	if c.isCaseInsensitive {
+		key = strings.ToLower(key)
+	}
 	if err := c.runValidators(key, value); err != nil {
 		return err
 	}
@@ -309,7 +317,9 @@ func (c *Configr) Get(key string) (interface{}, error) {
 }
 
 func (c *Configr) get(key string) (interface{}, error) {
-	key = strings.ToLower(key)
+	if c.isCaseInsensitive {
+		key = strings.ToLower(key)
+	}
 	if value, found := c.cache[key]; found {
 		return value, nil
 	}
@@ -443,4 +453,7 @@ func (c *Configr) SetKeyPathDelimeter(delimeter string) {
 }
 func (c *Configr) SetDescriptionWrapper(wrapper string) {
 	c.descriptionWrapper = wrapper
+}
+func (c *Configr) SetIsCaseSensitive(isCaseSensitive bool) {
+	c.isCaseInsensitive = !isCaseSensitive
 }

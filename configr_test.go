@@ -406,6 +406,46 @@ func Test_ItPassesANestedMapOfConfigNamesAndDefaults(t *testing.T) {
 	g.AssertExpectations(t)
 }
 
+func Test_ItIsCaseSensitiveByDefault(t *testing.T) {
+	config := New()
+	s1 := &MockSource{}
+	expectedValues := map[string]interface{}{
+		"T1": 1,
+		"T2": 2,
+		"T3": 3,
+	}
+
+	s1.On("Unmarshal").Return(expectedValues, nil)
+
+	config.AddSource(s1)
+	config.Parse()
+
+	assert.Equal(t, expectedValues, config.cache)
+}
+
+func Test_ItIsCaseInensitive(t *testing.T) {
+	config := New()
+	s1 := &MockSource{}
+	values := map[string]interface{}{
+		"T1": 1,
+		"T2": 2,
+		"T3": 3,
+	}
+	expectedValues := map[string]interface{}{
+		"t1": 1,
+		"t2": 2,
+		"t3": 3,
+	}
+
+	s1.On("Unmarshal").Return(values, nil)
+
+	config.AddSource(s1)
+	config.SetIsCaseSensitive(false)
+	config.Parse()
+
+	assert.Equal(t, expectedValues, config.cache)
+}
+
 type MockGenerator struct {
 	mock.Mock
 }
