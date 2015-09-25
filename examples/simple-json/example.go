@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/mail"
 	"os"
 	"path/filepath"
 
@@ -23,7 +24,10 @@ type Email struct {
 }
 
 func init() {
-	configr.RequireKey(EmailFromAddressKey, "Email from address")
+	configr.RequireKey(EmailFromAddressKey, "Email from address", func(v interface{}) error {
+		_, err := mail.ParseAddress(v.(string))
+		return err
+	})
 	configr.RequireKey(EmailSubjectKey, "Email subject")
 	configr.RegisterKey(EmailRetryOnFailKey, "Retry sending email if it fails", false)
 	configr.RegisterKey(EmailMaxRetriesKey, "How many times to retry email resending", 3)
