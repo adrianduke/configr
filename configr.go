@@ -85,10 +85,12 @@ func SetConfigr(c *Configr) {
 	globalConfigr = c
 }
 
-var globalConfigr *Configr = New()
-var ErrKeyNotFound = errors.New("configr: Key not found")
-var ErrParseHasntBeenCalled = errors.New("configr: Trying to get values before calling Parse()")
-var ErrNoRegisteredValues = errors.New("configr: No registered values to generate")
+var (
+	globalConfigr           *Configr = New()
+	ErrKeyNotFound                   = errors.New("configr: Key not found")
+	ErrParseHasntBeenCalled          = errors.New("configr: Trying to get values before calling Parse()")
+	ErrNoRegisteredValues            = errors.New("configr: No registered values to generate")
+)
 
 type ErrRequiredKeysMissing []string
 
