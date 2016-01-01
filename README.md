@@ -65,7 +65,7 @@ And use at your own leisure:
 
 ### Inj Datasource
 
-Continuing from the simple JSON example above, you can use github.com/yourheropaul/inj to auto-wire in your configuration values, bypassing much of the typical config wiring boilerplate:
+Continuing from the simple JSON example above, you can use http://github.com/yourheropaul/inj to auto-wire in your configuration values, bypassing much of the typical config wiring boilerplate:
 
 Pre register keys:
 ```go
