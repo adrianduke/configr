@@ -1,0 +1,8 @@
+{
+	"email": {
+		"fromAddress": "my@email.com",
+		"subject": "A Subject",
+		"retryOnFail": true,
+		"maxRetries": 5
+	}
+}
