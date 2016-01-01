@@ -15,6 +15,7 @@ Configr provides an abstraction above configuration sources, allowing you to use
 - **Custom blank config encoder support:** Implement an encoder for any data format and have a blank config generated in it
 - **Type conversion support:** Your config has string "5" but you want an int 5? No problem
 - **Comes pre-baked with JSON and TOML file support**
+- **Satisfies github.com/yourheropaul/inj:Datasource:** Allows you to bypass the manual wiring of config values to struct properties (see below)
 
 Built for a project at [HomeMade Digital](http://homemadedigital.com/), configrs primary goal was to eliminate user error when deploying projects with heavy configuration needs. The inclusion of required key support, value validators, descriptions and blank config generator allowed us to reduce pain for seperated client ops teams when deploying our apps. Our secondary goal was flexible configuration sources be it pulling from Mongo Document, DynamoDB Table, JSON or TOML files.
 
@@ -60,6 +61,66 @@ And use at your own leisure:
 	if err != nil {
 		...
 	}
+```
+
+### Inj Datasource
+
+Continuing from the simple JSON example above, you can use github.com/yourheropaul/inj to auto-wire in your configuration values, bypassing much of the typical config wiring boilerplate:
+
+Pre register keys:
+```go
+	configr.RequireKey("email.fromAddress", "Email from address")
+	configr.RequireKey("email.subject", "Email subject")
+	configr.RegisterKey("email.retryOnFail", "Retry sending email if it fails", false)
+	configr.RegisterKey("email.maxRetries", "How many times to retry email resending", 3)
+```
+
+Add the relevant inj struct tags with their corresponding key paths:
+```go
+type Email struct {
+	FromAddress string `inj:"email.fromAddress"`
+	Subject     string `inj:"email.subject"`
+	MaxRetries  int    `inj:"email.maxRetries"`
+	RetryOnFail bool   `inj:"email.retryOnFail"`
+}
+```
+
+Add and setup your source (assume we're using the same config json as above):
+```go
+	configr.AddSource(configr.NewFileSource("/tmp/config.json"))
+```
+
+Parse your config:
+```go
+	if err := configr.Parse(); err != nil {
+		...
+	}
+```
+
+Setup inj with configr as its Datasource and commence the magic:
+```go
+	email := Email{}
+	inj.Provide(&email) // Informs inj to perform DI on given instance
+	inj.AddDatasource(configr.GetConfigr()) // Provides inj with a datasource to query
+
+	if valid, errors := inj.Assert(); !valid { // Triggers the inj DI process
+		...
+	}
+```
+
+Marvel at the ease of auto-wiring:
+```go
+	fmt.Println("> Email Address:", email.FromAddress)
+	fmt.Println("> Subject:", email.Subject)
+	fmt.Println("> Max Retries:", email.MaxRetries)
+	fmt.Println("> Retry on Fail:", email.RetryOnFail)
+```
+
+```
+> Email Address: my@email.com
+> Subject: A Subject
+> Max Retries: 5
+> Retry on Fail: true
 ```
 
 More examples can be found in the `examples/` dir.
