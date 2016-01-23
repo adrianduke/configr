@@ -127,7 +127,7 @@ More examples can be found in the `examples/` dir.
 
 ## Changes
 
-**v1.0.0**
+**v0.3.0**
 
 - File source now supports registering encoders/decoders at a distance, check out the json and toml packages for examples
 - API Change `NewFileSource()` -> `NewFile()`
