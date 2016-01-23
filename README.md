@@ -129,3 +129,12 @@ More examples can be found in the `examples/` dir.
 - Concurrent safety, particularly in multi `Parse()`'ing systems and when adding sources (will allow for hot reloads)
 - FileSource needs to be refactored to reduce dependency needs, something similar to sql package with a central register and blank importing the flavour you need
 - More available sources, Env vars, Flags... etc
+- Decide wether or not to ditch errors on the key getter methods (String, Get, Bool...). Alternative solution is to provide a 'Errored() bool' and 'Errors() []error or chan error' methods to Config interface.
+	Arguments for:
+		- Simpler interface when all you want is values
+	Arguments against:
+		- Error swallowing, decoupling of cause and effect (try to fetch key that cannot be converted to type ("aaa" -> Int()), user never checks configr for errors, system starts behaving weirdly)
+		- Internal error managing will get funky in a concurrent environment, would have to use an error channel to pump the errors into, wouldn't be able to guarentee ordering or sacrafice performance for co-ordination
+- Wrap validation errors
+- Provide all primary types as getter methods
+- Add 'Keys' method to Source interface to accept keys and key name splitting func as parameters, provides keys for lookup for Sources that don't have 'scan' style interfaces, and potential performance improvements

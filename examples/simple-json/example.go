@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/adrianduke/configr"
+	_ "github.com/adrianduke/configr/sources/file/json"
 )
 
 const (
@@ -36,7 +37,8 @@ func init() {
 func main() {
 	// Wont work if GOPATH contains multiple DIRs
 	path := filepath.Join(os.Getenv("GOPATH"), "src/github.com/adrianduke/configr/examples/simple-json/config.json")
-	configr.AddSource(configr.NewFileSource(path))
+	f := configr.NewFile(path)
+	configr.AddSource(f)
 
 	if err := configr.Parse(); err != nil {
 		fmt.Println(err)
@@ -76,8 +78,6 @@ func main() {
 	//
 	// Generate blank config
 	//
-	f := configr.NewFileSource("")
-	f.SetEncoding(configr.JSON)
 
 	// f implements the encoder interface
 	configBytes, err := configr.GenerateBlank(f)
