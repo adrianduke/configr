@@ -127,7 +127,7 @@ More examples can be found in the `examples/` dir.
 
 ## TODO:
 - Concurrent safety, particularly in multi `Parse()`'ing systems and when adding sources (will allow for hot reloads)
-- FileSource needs to be refactored to reduce dependency needs, something similar to sql package with a central register and blank importing the flavour you need
+- ~~FileSource needs to be refactored to reduce dependency needs, something similar to sql package with a central register and blank importing the flavour you need~~
 - More available sources, Env vars, Flags... etc
 - Decide wether or not to ditch errors on the key getter methods (String, Get, Bool...). Alternative solution is to provide a 'Errored() bool' and 'Errors() []error or chan error' methods to Config interface.
 	Arguments for:
