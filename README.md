@@ -125,6 +125,17 @@ Marvel at the ease of auto-wiring:
 
 More examples can be found in the `examples/` dir.
 
+## Changes
+
+**v1.0.0**
+
+- File source now supports registering encoders/decoders at a distance, check out the json and toml packages for examples
+- API Change `NewFileSource()` -> `NewFile()`
+
+**v0.2.0**
+
+- Add support for inj datasource
+
 ## TODO:
 - Concurrent safety, particularly in multi `Parse()`'ing systems and when adding sources (will allow for hot reloads)
 - ~~FileSource needs to be refactored to reduce dependency needs, something similar to sql package with a central register and blank importing the flavour you need~~
