@@ -17,3 +17,9 @@ type EncoderAdapter func(interface{}) ([]byte, error)
 func (f EncoderAdapter) Marshal(v interface{}) ([]byte, error) {
 	return f(v)
 }
+
+type FileDecoderAdapter func([]byte, interface{}) error
+
+func (f FileDecoderAdapter) Unmarshal(b []byte, v interface{}) error {
+	return f(b, v)
+}

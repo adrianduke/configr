@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/adrianduke/configr"
+	_ "github.com/adrianduke/configr/sources/file/json"
 	"github.com/yourheropaul/inj"
 )
 
@@ -37,7 +38,7 @@ func init() {
 func main() {
 	// Wont work if GOPATH contains multiple DIRs
 	path := filepath.Join(os.Getenv("GOPATH"), "src/github.com/adrianduke/configr/examples/simple-json-inj/config.json")
-	configr.AddSource(configr.NewFileSource(path))
+	configr.AddSource(configr.NewFile(path))
 
 	if err := configr.Parse(); err != nil {
 		fmt.Println(err)

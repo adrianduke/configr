@@ -5,8 +5,9 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/adrianduke/configr"
-
+	"github.com/adrianduke/configr"
+	"github.com/adrianduke/configr/sources/file/json"
+	"github.com/adrianduke/configr/sources/file/toml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,6 +17,9 @@ func writeTempFile(t *testing.T, filePath string, content string) {
 }
 
 func Test_ItParsesAllValuesFromJSONConfig(t *testing.T) {
+	// Not required outside of this package
+	json.Register()
+
 	filePath := "/tmp/test.json"
 	writeTempFile(t, filePath, `{
 	"t1": "1",
@@ -27,9 +31,9 @@ func Test_ItParsesAllValuesFromJSONConfig(t *testing.T) {
 	}
 }`)
 	defer os.Remove(filePath)
-	f := NewFileSource(filePath)
+	f := configr.NewFile(filePath)
 
-	config := New()
+	config := configr.New()
 	config.AddSource(f)
 	config.RequireKey("t1", "")
 	config.RequireKey("t2.t21", "")
@@ -54,6 +58,9 @@ func Test_ItParsesAllValuesFromJSONConfig(t *testing.T) {
 }
 
 func Test_ItParsesAllValuesFromTOMLConfig(t *testing.T) {
+	// Not required outside of this package
+	toml.Register()
+
 	filePath := "/tmp/test.toml"
 	writeTempFile(t, filePath, `
 [t1]
@@ -67,9 +74,9 @@ t12 = 2
 		t2121 = "4"
 `)
 	defer os.Remove(filePath)
-	f := NewFileSource(filePath)
+	f := configr.NewFile(filePath)
 
-	config := New()
+	config := configr.New()
 	config.AddSource(f)
 	config.RequireKey("t1.t11", "")
 	config.RequireKey("t1.t12", "")
@@ -98,7 +105,10 @@ t12 = 2
 }
 
 func Test_ItGeneratesBlankJSONConfig(t *testing.T) {
-	config := New()
+	// Not required outside of this package
+	json.Register()
+
+	config := configr.New()
 	expectedOutput := `{
 	"t1": {
 		"t11": "*** You need this ***",
@@ -120,8 +130,8 @@ func Test_ItGeneratesBlankJSONConfig(t *testing.T) {
 	config.RequireKey("t2.t21.t212.t2121", "Also me!")
 	config.RegisterKey("t3", "", 0)
 
-	f := NewFileSource("")
-	f.SetEncoding(JSON)
+	f := configr.NewFile("")
+	f.SetEncodingName("json")
 
 	configBytes, err := config.GenerateBlank(f)
 	assert.NoError(t, err)
@@ -130,7 +140,10 @@ func Test_ItGeneratesBlankJSONConfig(t *testing.T) {
 }
 
 func Test_ItGeneratesBlankTOMLConfig(t *testing.T) {
-	config := New()
+	// Not required outside of this package
+	toml.Register()
+
+	config := configr.New()
 	expectedOutput := `t3 = 0
 
 [t1]
@@ -149,8 +162,8 @@ func Test_ItGeneratesBlankTOMLConfig(t *testing.T) {
 	config.RequireKey("t2.t21.t212.t2121", "Also me!")
 	config.RegisterKey("t3", "", 0)
 
-	f := NewFileSource("")
-	f.SetEncoding(TOML)
+	f := configr.NewFile("")
+	f.SetEncodingName("toml")
 
 	configBytes, err := config.GenerateBlank(f)
 	assert.NoError(t, err)
