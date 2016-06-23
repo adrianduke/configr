@@ -26,6 +26,11 @@ type Manager interface {
 // key, anytime the config key is found in a Source it's value is validated.
 type Validator func(interface{}) error
 
+// KeySplitter is a function that takes a key path and splits it into its sub-parts:
+//   In: "person.height.inches"
+//   Out: []string("person", "height", "inches")
+type KeySplitter func(string) []string
+
 type Config interface {
 	Parse() error
 	Parsed() bool
@@ -43,6 +48,7 @@ type Config interface {
 // return a map[string]interface{} of all key/value pairs (nesting is supported)
 // with multiple types.
 type Source interface {
+	KeysToUnmarshal([]string, KeySplitter)
 	Unmarshal() (map[string]interface{}, error)
 }
 
@@ -63,6 +69,7 @@ type Configr struct {
 	keyDelimeter       string
 	descriptionWrapper string
 	isCaseInsensitive  bool
+	keySplitterFn      KeySplitter
 }
 
 func New() *Configr {
@@ -74,6 +81,7 @@ func New() *Configr {
 		cache:              make(map[string]interface{}),
 		keyDelimeter:       ".",
 		descriptionWrapper: "***",
+		keySplitterFn:      newKeySplitter("."),
 	}
 }
 
@@ -452,10 +460,17 @@ func (c *Configr) wrapDescription(description string) string {
 
 func (c *Configr) SetKeyPathDelimeter(delimeter string) {
 	c.keyDelimeter = delimeter
+	c.keySplitterFn = newKeySplitter(delimeter)
 }
 func (c *Configr) SetDescriptionWrapper(wrapper string) {
 	c.descriptionWrapper = wrapper
 }
 func (c *Configr) SetIsCaseSensitive(isCaseSensitive bool) {
 	c.isCaseInsensitive = !isCaseSensitive
+}
+
+func newKeySplitter(delimeter string) KeySplitter {
+	return func(key string) []string {
+		return strings.Split(key, delimeter)
+	}
 }

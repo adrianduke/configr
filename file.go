@@ -98,6 +98,8 @@ func (f *File) Marshal(v interface{}) ([]byte, error) {
 	return []byte{}, ErrUnknownEncoding
 }
 
+func (f *File) KeysToUnmarshal(_ []string, _ KeySplitter) {}
+
 func getFileExtension(filePath string) string {
 	return strings.TrimPrefix(filepath.Ext(filePath), ".")
 }

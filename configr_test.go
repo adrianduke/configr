@@ -463,3 +463,7 @@ func (p *MockSource) Unmarshal() (map[string]interface{}, error) {
 	args := p.Called()
 	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
+
+func (p *MockSource) KeysToUnmarshal(keys []string, splitter KeySplitter) {
+	p.Called(keys, splitter)
+}
