@@ -197,8 +197,16 @@ func (c *Configr) checkRequiredKeys() error {
 }
 
 func (c *Configr) populateValues() error {
+	expectedKeys := make([]string, 0, len(c.registeredKeys))
+	for key, _ := range c.registeredKeys {
+		expectedKeys = append(expectedKeys, key)
+	}
+	sort.Strings(expectedKeys)
+
 	for i := len(c.sources) - 1; i >= 0; i-- {
 		source := c.sources[i]
+
+		source.KeysToUnmarshal(expectedKeys, c.keySplitterFn)
 
 		sourceValues, err := source.Unmarshal()
 		if err != nil {
