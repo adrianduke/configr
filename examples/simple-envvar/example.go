@@ -69,10 +69,4 @@ func main() {
 	}
 
 	fmt.Printf("Values:\n\t%#v\n\n", email)
-
-	// Un-polute environment
-	os.Unsetenv("CONFIGR_EMAIL_FROMADDRESS")
-	os.Unsetenv("CONFIGR_EMAIL_SUBJECT")
-	os.Unsetenv("CONFIGR_EMAIL_RETRYONFAIL")
-	os.Unsetenv("CONFIGR_EMAIL_MAXRETRIES")
 }
