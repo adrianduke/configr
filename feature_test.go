@@ -170,3 +170,33 @@ func Test_ItGeneratesBlankTOMLConfig(t *testing.T) {
 
 	assert.Equal(t, expectedOutput, string(configBytes))
 }
+
+func Test_ItParsesValuesFromEnvironmentalVariables(t *testing.T) {
+	os.Setenv("CONFIGR_T1", "1")
+	os.Setenv("CONFIGR_T2_T21", "2")
+	os.Setenv("CONFIGR_T2_T22_T221", "true")
+
+	config := configr.New()
+	config.AddSource(configr.NewEnvVars("configr"))
+
+	config.RequireKey("t1", "")
+	config.RequireKey("t2.t21", "")
+	config.RequireKey("t2.t22.t221", "")
+	config.RegisterKey("t3", "", 3)
+
+	assert.NoError(t, config.Parse())
+
+	t1, err := config.String("t1")
+	assert.NoError(t, err)
+	t2t21, err := config.Float64("t2.t21")
+	assert.NoError(t, err)
+	t2t22t221, err := config.Bool("t2.t22.t221")
+	assert.NoError(t, err)
+	t3, err := config.Int("t3")
+	assert.NoError(t, err)
+
+	assert.Equal(t, "1", t1)
+	assert.Equal(t, float64(2), t2t21)
+	assert.Equal(t, true, t2t22t221)
+	assert.Equal(t, 3, t3)
+}

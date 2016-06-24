@@ -9,13 +9,19 @@ import (
 )
 
 func setupErroringSources(sources ...*MockSource) {
+	sources[0].On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	sources[0].On("Unmarshal").Return(map[string]interface{}{}, nil)
+
+	sources[1].On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	sources[1].On("Unmarshal").Return(map[string]interface{}{}, errors.New("!"))
+
+	sources[2].On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	sources[2].On("Unmarshal").Return(map[string]interface{}{}, nil)
 }
 
 func setupNonErroringSources(sources ...*MockSource) {
 	for _, source := range sources {
+		source.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 		source.On("Unmarshal").Return(map[string]interface{}{}, nil)
 	}
 }
@@ -143,6 +149,7 @@ func Test_ItPopulatesConfigrValuesFromSource(t *testing.T) {
 		"t3": 3,
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(expectedValues, nil)
 
 	config.AddSource(s1)
@@ -163,6 +170,7 @@ func Test_ItReturnsErrorFromSet(t *testing.T) {
 		return errors.New("!")
 	})
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(expectedValues, nil)
 
 	config.AddSource(s1)
@@ -187,7 +195,9 @@ func Test_ItOverwritesValuesFromHigherPrioritySources(t *testing.T) {
 		"t3": 4,
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(s1Values, nil)
+	s2.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s2.On("Unmarshal").Return(s2Values, nil)
 
 	config.AddSource(s1)
@@ -207,6 +217,7 @@ func Test_ItDoesntPanicOnValueNotRegisteredErrors(t *testing.T) {
 		"t3": 3,
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(s1Values, nil)
 
 	config.AddSource(s1)
@@ -260,6 +271,7 @@ func Test_ItErrorsIfNotAllRequiredValuesAreFound(t *testing.T) {
 		},
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(s1Values, nil)
 
 	config.AddSource(s1)
@@ -312,7 +324,9 @@ func Test_ItRespectsNestedValuesFromMultipleSources(t *testing.T) {
 		},
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(s1Values, nil)
+	s2.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s2.On("Unmarshal").Return(s2Values, nil)
 
 	config.AddSource(s1)
@@ -415,6 +429,7 @@ func Test_ItIsCaseSensitiveByDefault(t *testing.T) {
 		"T3": 3,
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(expectedValues, nil)
 
 	config.AddSource(s1)
@@ -437,6 +452,7 @@ func Test_ItIsCaseInensitive(t *testing.T) {
 		"t3": 3,
 	}
 
+	s1.On("KeysToUnmarshal", mock.AnythingOfType("[]string"), mock.AnythingOfType("KeySplitter")).Return()
 	s1.On("Unmarshal").Return(values, nil)
 
 	config.AddSource(s1)
@@ -444,6 +460,64 @@ func Test_ItIsCaseInensitive(t *testing.T) {
 	config.Parse()
 
 	assert.Equal(t, expectedValues, config.cache)
+}
+
+func Test_ItPassesAllKeysToUnmarshalToSource(t *testing.T) {
+	config := New()
+	s1 := &MockSource{}
+
+	t1 := int(1)
+	t2t21 := "2"
+	t2t22 := float64(3.0)
+
+	expectedKeys := []string{
+		"t1",
+		"t2.t21",
+		"t2.t22",
+		"t3.t31.t311",
+	}
+
+	config.RegisterKey("t1", "test 1", t1)
+	config.RegisterKey("t2.t21", "test 2", t2t21)
+	config.RegisterKey("t2.t22", "test 3", t2t22)
+	config.RequireKey("t3.t31.t311", "test 4")
+
+	s1.On("KeysToUnmarshal", expectedKeys, mock.AnythingOfType("KeySplitter")).Return()
+	s1.On("Unmarshal").Return(map[string]interface{}{}, nil)
+
+	config.AddSource(s1)
+	config.Parse()
+
+	s1.AssertExpectations(t)
+}
+
+func Test_ItPassesAValidKeySplittingFuncToSource(t *testing.T) {
+	config := New()
+	s1 := &MockSource{}
+
+	var result []string
+	t1t11t111 := "2"
+	expectedValue := []string{"t1", "t11", "t111"}
+
+	config.RegisterKey("t1.t11.t111", "test 1", t1t11t111)
+
+	s1.
+		On("KeysToUnmarshal",
+			mock.AnythingOfType("[]string"),
+			mock.AnythingOfType("KeySplitter"),
+		).
+		Return().
+		Run(func(args mock.Arguments) {
+			expectedKeys := args.Get(0).([]string)
+			splitterFn := args.Get(1).(KeySplitter)
+			result = splitterFn(expectedKeys[0])
+		})
+	s1.On("Unmarshal").Return(map[string]interface{}{}, nil)
+
+	config.AddSource(s1)
+	config.Parse()
+
+	assert.Equal(t, expectedValue, result)
 }
 
 type MockGenerator struct {
@@ -462,4 +536,8 @@ type MockSource struct {
 func (p *MockSource) Unmarshal() (map[string]interface{}, error) {
 	args := p.Called()
 	return args.Get(0).(map[string]interface{}), args.Error(1)
+}
+
+func (p *MockSource) KeysToUnmarshal(keys []string, splitter KeySplitter) {
+	p.Called(keys, splitter)
 }
