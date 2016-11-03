@@ -127,6 +127,10 @@ More examples can be found in the `examples/` dir.
 
 ## Changes
 
+**v0.5.0**
+- Remove `KeysToUnmarshal` from the `Source` interface, broke adapter and generally was unncessary. Functionality has been squashed into the `Unmarhsal` method. Any existing sources will need to be updated to accept the 2 new arguments on `Unmarshal`.
+- Validation errors are now wrapped so you can see the offending key
+
 **v0.4.0**
 
 - Added new method `KeysToUnmarshal` to the `Source` interface, allows configr to tell your source what keys to expect, it also passes a key splitter func along so you can deconstruct nested keys to do as you please. See `./env_vars.go` for an example. Expected to be used in instances where a source doesn't have scan like functionality and needs to know the keys to search for in advance when it unmarshals.
@@ -144,13 +148,13 @@ More examples can be found in the `examples/` dir.
 ## TODO:
 - Concurrent safety, particularly in multi `Parse()`'ing systems and when adding sources (will allow for hot reloads)
 - ~~FileSource needs to be refactored to reduce dependency needs, something similar to sql package with a central register and blank importing the flavour you need~~
-- More available sources, Env vars, Flags... etc
+- More available sources, ~~Env vars~~, Flags... etc
 - Decide wether or not to ditch errors on the key getter methods (String, Get, Bool...). Alternative solution is to provide a 'Errored() bool' and 'Errors() []error or chan error' methods to Config interface.
 	Arguments for:
 		- Simpler interface when all you want is values
 	Arguments against:
 		- Error swallowing, decoupling of cause and effect (try to fetch key that cannot be converted to type ("aaa" -> Int()), user never checks configr for errors, system starts behaving weirdly)
 		- Internal error managing will get funky in a concurrent environment, would have to use an error channel to pump the errors into, wouldn't be able to guarentee ordering or sacrafice performance for co-ordination
-- Wrap validation errors
+- ~~Wrap validation errors~~
 - Provide all primary types as getter methods
 - ~~Add 'Keys' method to Source interface to accept keys and key name splitting func as parameters, provides keys for lookup for Sources that don't have 'scan' style interfaces, and potential performance improvements~~
