@@ -130,6 +130,7 @@ More examples can be found in the `examples/` dir.
 **v0.5.0**
 - Remove `KeysToUnmarshal` from the `Source` interface, broke adapter and generally was unncessary. Functionality has been squashed into the `Unmarhsal` method. Any existing sources will need to be updated to accept the 2 new arguments on `Unmarshal`.
 - Validation errors are now wrapped so you can see the offending key
+- Moved `EnvVar` source into the `sources/` dir
 
 **v0.4.0**
 
