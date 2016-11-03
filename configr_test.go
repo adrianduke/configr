@@ -88,6 +88,21 @@ func Test_ItReturnsErrorOnFirstFailingValidator(t *testing.T) {
 	assert.Error(t, config.set("test", 1))
 }
 
+func Test_ItWrapsValidationErrors(t *testing.T) {
+	config := New()
+	expectedError := NewValidationError("test", errors.New("!!!"))
+	v1 := func(v interface{}) error {
+		return errors.New("!!!")
+	}
+
+	config.RegisterKey("test", "", nil, v1)
+
+	err := config.set("test", 1)
+
+	assert.Equal(t, expectedError, err)
+	assert.EqualError(t, err, "Validation error on key 'test': !!!")
+}
+
 func Test_ItRunsValidatorsWhenSettingValue(t *testing.T) {
 	config := New()
 	v1HasRun := false
