@@ -12,15 +12,12 @@ const (
 var lookupEnv = shimLookupEnv
 
 type EnvVars struct {
-	prefix             string
-	envVarsToUnmarshal []string
-	keysToUnmarshal    []string
+	prefix string
 }
 
 func NewEnvVars(prefix string) *EnvVars {
 	return &EnvVars{
-		prefix:             prefix,
-		envVarsToUnmarshal: []string{},
+		prefix: prefix,
 	}
 }
 
