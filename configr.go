@@ -57,6 +57,22 @@ type Encoder interface {
 	Marshal(interface{}) ([]byte, error)
 }
 
+func NewValidationError(key string, err error) ValidationError {
+	return ValidationError{
+		Key: key,
+		Err: err,
+	}
+}
+
+type ValidationError struct {
+	Key string
+	Err error
+}
+
+func (v ValidationError) Error() string {
+	return "Validation error on key '" + v.Key + "': " + v.Err.Error()
+}
+
 type Configr struct {
 	valueValidators    map[string][]Validator
 	registeredKeys     map[string]string
@@ -289,7 +305,7 @@ func (c *Configr) runValidators(key string, value interface{}) error {
 		if validators, found := c.valueValidators[validatorKey]; found {
 			for _, validate := range validators {
 				if err := validate(valueToValidate); err != nil {
-					return err
+					return NewValidationError(validatorKey, err)
 				}
 			}
 		}
