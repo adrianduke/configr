@@ -71,7 +71,7 @@ func (f *File) Path() string {
 	return f.filePath
 }
 
-func (f *File) Unmarshal() (map[string]interface{}, error) {
+func (f *File) Unmarshal(_ []string, _ KeySplitter) (map[string]interface{}, error) {
 	if decoder, found := RegisteredFileDecoders[f.encodingName]; found {
 		values := make(map[string]interface{})
 
@@ -97,8 +97,6 @@ func (f *File) Marshal(v interface{}) ([]byte, error) {
 
 	return []byte{}, ErrUnknownEncoding
 }
-
-func (f *File) KeysToUnmarshal(_ []string, _ KeySplitter) {}
 
 func getFileExtension(filePath string) string {
 	return strings.TrimPrefix(filepath.Ext(filePath), ".")
