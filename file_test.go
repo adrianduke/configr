@@ -62,7 +62,7 @@ func Test_ItErrorsIfItCantFindFileEncoding(t *testing.T) {
 	defer resetGlobals()()
 	f := NewFile("/tmp/config.js")
 
-	_, err := f.Unmarshal()
+	_, err := f.Unmarshal([]string{}, nil)
 
 	assert.EqualError(t, err, ErrUnknownEncoding.Error())
 }

@@ -24,27 +24,16 @@ func NewEnvVars(prefix string) *EnvVars {
 	}
 }
 
-func (e *EnvVars) Unmarshal() (map[string]interface{}, error) {
+func (e *EnvVars) Unmarshal(keys []string, keySplitter KeySplitter) (map[string]interface{}, error) {
 	returnMap := map[string]interface{}{}
 
-	for i, envVarKey := range e.envVarsToUnmarshal {
-		if envVarValue, exists := lookupEnv(envVarKey); exists {
-			returnMap[e.keysToUnmarshal[i]] = envVarValue
+	for _, key := range keys {
+		if envVarValue, exists := lookupEnv(toEnvVarKey(e.prefix, key, keySplitter)); exists {
+			returnMap[key] = envVarValue
 		}
 	}
 
 	return returnMap, nil
-}
-
-func (e *EnvVars) KeysToUnmarshal(keys []string, keySplitter KeySplitter) {
-	e.keysToUnmarshal = keys
-
-	for _, key := range keys {
-		e.envVarsToUnmarshal = append(
-			e.envVarsToUnmarshal,
-			toEnvVarKey(e.prefix, key, keySplitter),
-		)
-	}
 }
 
 func toEnvVarKey(prefix, key string, keySplitter KeySplitter) string {

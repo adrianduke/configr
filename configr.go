@@ -46,10 +46,9 @@ type Config interface {
 
 // Source is a source of configuration keys and values, calling unmarshal should
 // return a map[string]interface{} of all key/value pairs (nesting is supported)
-// with multiple types.
+// with multiple types. First arg is a slice of all expected keys.
 type Source interface {
-	KeysToUnmarshal([]string, KeySplitter)
-	Unmarshal() (map[string]interface{}, error)
+	Unmarshal([]string, KeySplitter) (map[string]interface{}, error)
 }
 
 // Encoder would be used to encode registered and required values (along with
@@ -206,12 +205,11 @@ func (c *Configr) populateValues() error {
 	for i := len(c.sources) - 1; i >= 0; i-- {
 		source := c.sources[i]
 
-		source.KeysToUnmarshal(expectedKeys, c.keySplitterFn)
-
-		sourceValues, err := source.Unmarshal()
+		sourceValues, err := source.Unmarshal(expectedKeys, c.keySplitterFn)
 		if err != nil {
 			return err
 		}
+
 		for key, value := range sourceValues {
 			if err := c.set(key, value); err != nil {
 				return err
