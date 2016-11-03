@@ -1,15 +1,16 @@
-package configr
+package sources
 
 import (
 	"os"
 	"testing"
 
+	"github.com/adrianduke/configr"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_ItUnmarhsalsKeysFromEnvironmentalVariables(t *testing.T) {
 	prefix := ""
-	keySplitter := newKeySplitter(".")
+	keySplitter := configr.NewKeySplitter(".")
 	envVars := NewEnvVars(prefix)
 
 	configrKeys := []string{
@@ -42,7 +43,7 @@ func Test_ItUnmarhsalsKeysFromEnvironmentalVariables(t *testing.T) {
 
 func Test_ItUnmarhsalsKeysFromEnvironmentalVariablesWithPrefix(t *testing.T) {
 	prefix := "configr"
-	keySplitter := newKeySplitter(".")
+	keySplitter := configr.NewKeySplitter(".")
 	envVars := NewEnvVars(prefix)
 
 	configrKeys := []string{

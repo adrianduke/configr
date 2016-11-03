@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/adrianduke/configr"
+	"github.com/adrianduke/configr/sources"
 	"github.com/adrianduke/configr/sources/file/json"
 	"github.com/adrianduke/configr/sources/file/toml"
 	"github.com/stretchr/testify/assert"
@@ -177,7 +178,7 @@ func Test_ItParsesValuesFromEnvironmentalVariables(t *testing.T) {
 	os.Setenv("CONFIGR_T2_T22_T221", "true")
 
 	config := configr.New()
-	config.AddSource(configr.NewEnvVars("configr"))
+	config.AddSource(sources.NewEnvVars("configr"))
 
 	config.RequireKey("t1", "")
 	config.RequireKey("t2.t21", "")

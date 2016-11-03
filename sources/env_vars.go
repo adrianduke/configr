@@ -1,8 +1,10 @@
-package configr
+package sources
 
 import (
 	"os"
 	"strings"
+
+	"github.com/adrianduke/configr"
 )
 
 const (
@@ -21,7 +23,7 @@ func NewEnvVars(prefix string) *EnvVars {
 	}
 }
 
-func (e *EnvVars) Unmarshal(keys []string, keySplitter KeySplitter) (map[string]interface{}, error) {
+func (e *EnvVars) Unmarshal(keys []string, keySplitter configr.KeySplitter) (map[string]interface{}, error) {
 	returnMap := map[string]interface{}{}
 
 	for _, key := range keys {
@@ -33,7 +35,7 @@ func (e *EnvVars) Unmarshal(keys []string, keySplitter KeySplitter) (map[string]
 	return returnMap, nil
 }
 
-func toEnvVarKey(prefix, key string, keySplitter KeySplitter) string {
+func toEnvVarKey(prefix, key string, keySplitter configr.KeySplitter) string {
 	keyParts := keySplitter(strings.ToUpper(key))
 
 	if prefix != "" {

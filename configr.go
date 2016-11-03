@@ -96,7 +96,7 @@ func New() *Configr {
 		cache:              make(map[string]interface{}),
 		keyDelimeter:       ".",
 		descriptionWrapper: "***",
-		keySplitterFn:      newKeySplitter("."),
+		keySplitterFn:      NewKeySplitter("."),
 	}
 }
 
@@ -482,7 +482,7 @@ func (c *Configr) wrapDescription(description string) string {
 
 func (c *Configr) SetKeyPathDelimeter(delimeter string) {
 	c.keyDelimeter = delimeter
-	c.keySplitterFn = newKeySplitter(delimeter)
+	c.keySplitterFn = NewKeySplitter(delimeter)
 }
 func (c *Configr) SetDescriptionWrapper(wrapper string) {
 	c.descriptionWrapper = wrapper
@@ -491,7 +491,7 @@ func (c *Configr) SetIsCaseSensitive(isCaseSensitive bool) {
 	c.isCaseInsensitive = !isCaseSensitive
 }
 
-func newKeySplitter(delimeter string) KeySplitter {
+func NewKeySplitter(delimeter string) KeySplitter {
 	return func(key string) []string {
 		return strings.Split(key, delimeter)
 	}
