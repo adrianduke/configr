@@ -46,16 +46,31 @@ type Config interface {
 
 // Source is a source of configuration keys and values, calling unmarshal should
 // return a map[string]interface{} of all key/value pairs (nesting is supported)
-// with multiple types.
+// with multiple types. First arg is a slice of all expected keys.
 type Source interface {
-	KeysToUnmarshal([]string, KeySplitter)
-	Unmarshal() (map[string]interface{}, error)
+	Unmarshal([]string, KeySplitter) (map[string]interface{}, error)
 }
 
 // Encoder would be used to encode registered and required values (along with
 // their defaults or descriptions) into bytes.
 type Encoder interface {
 	Marshal(interface{}) ([]byte, error)
+}
+
+func NewValidationError(key string, err error) ValidationError {
+	return ValidationError{
+		Key: key,
+		Err: err,
+	}
+}
+
+type ValidationError struct {
+	Key string
+	Err error
+}
+
+func (v ValidationError) Error() string {
+	return "Validation error on key '" + v.Key + "': " + v.Err.Error()
 }
 
 type Configr struct {
@@ -81,7 +96,7 @@ func New() *Configr {
 		cache:              make(map[string]interface{}),
 		keyDelimeter:       ".",
 		descriptionWrapper: "***",
-		keySplitterFn:      newKeySplitter("."),
+		keySplitterFn:      NewKeySplitter("."),
 	}
 }
 
@@ -206,12 +221,11 @@ func (c *Configr) populateValues() error {
 	for i := len(c.sources) - 1; i >= 0; i-- {
 		source := c.sources[i]
 
-		source.KeysToUnmarshal(expectedKeys, c.keySplitterFn)
-
-		sourceValues, err := source.Unmarshal()
+		sourceValues, err := source.Unmarshal(expectedKeys, c.keySplitterFn)
 		if err != nil {
 			return err
 		}
+
 		for key, value := range sourceValues {
 			if err := c.set(key, value); err != nil {
 				return err
@@ -291,7 +305,7 @@ func (c *Configr) runValidators(key string, value interface{}) error {
 		if validators, found := c.valueValidators[validatorKey]; found {
 			for _, validate := range validators {
 				if err := validate(valueToValidate); err != nil {
-					return err
+					return NewValidationError(validatorKey, err)
 				}
 			}
 		}
@@ -468,7 +482,7 @@ func (c *Configr) wrapDescription(description string) string {
 
 func (c *Configr) SetKeyPathDelimeter(delimeter string) {
 	c.keyDelimeter = delimeter
-	c.keySplitterFn = newKeySplitter(delimeter)
+	c.keySplitterFn = NewKeySplitter(delimeter)
 }
 func (c *Configr) SetDescriptionWrapper(wrapper string) {
 	c.descriptionWrapper = wrapper
@@ -477,7 +491,7 @@ func (c *Configr) SetIsCaseSensitive(isCaseSensitive bool) {
 	c.isCaseInsensitive = !isCaseSensitive
 }
 
-func newKeySplitter(delimeter string) KeySplitter {
+func NewKeySplitter(delimeter string) KeySplitter {
 	return func(key string) []string {
 		return strings.Split(key, delimeter)
 	}

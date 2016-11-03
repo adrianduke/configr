@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/adrianduke/configr"
+	"github.com/adrianduke/configr/sources"
 )
 
 const (
@@ -33,7 +34,7 @@ func init() {
 }
 
 func main() {
-	configr.AddSource(configr.NewEnvVars("configr"))
+	configr.AddSource(sources.NewEnvVars("configr"))
 
 	if err := configr.Parse(); err != nil {
 		fmt.Println(err)
