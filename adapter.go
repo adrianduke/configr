@@ -23,3 +23,7 @@ type FileDecoderAdapter func([]byte, interface{}) error
 func (f FileDecoderAdapter) Unmarshal(b []byte, v interface{}) error {
 	return f(b, v)
 }
+
+var _ Source = SourceAdapter(nil)
+var _ Encoder = EncoderAdapter(nil)
+var _ FileDecoder = FileDecoderAdapter(nil)

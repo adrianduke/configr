@@ -17,4 +17,4 @@ install:
   - go get -t -v ./...
 
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - $HOME/gopath/bin/goveralls -service=travis-ci -ignore=examples/*/*
