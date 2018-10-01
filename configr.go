@@ -143,6 +143,7 @@ func (c *Configr) RegisterKey(name, description string, defaultVal interface{}, 
 
 	if defaultVal != nil {
 		c.defaultValues[name] = defaultVal
+		c.cache = c.mergeMap(name, defaultVal, c.cache)
 	}
 
 	if len(validators) > 0 {
@@ -368,10 +369,6 @@ func (c *Configr) get(key string) (interface{}, error) {
 				return val, nil
 			}
 		}
-	}
-
-	if defaultValue, found := c.defaultValues[key]; found {
-		return defaultValue, nil
 	}
 
 	return nil, ErrKeyNotFound

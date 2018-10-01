@@ -383,6 +383,19 @@ func Test_ItReturnsDefaultValueIfNoValueFoundFromSources(t *testing.T) {
 	assert.Equal(t, 1, value.(int))
 }
 
+func Test_ItReturnsDefaultValuesInSubtree(t *testing.T) {
+	config := New()
+	config.parsed = true
+
+	config.RequireKey("t1", "")
+	config.RegisterKey("t1.t1", "", true)
+
+	value, err := config.Get("t1")
+	assert.NoError(t, err)
+
+	assert.True(t, value.(map[string]interface{})["t1"].(bool))
+}
+
 func Test_ItReturnsErrorIfNoRegisteredValuesToGenerate(t *testing.T) {
 	config := New()
 	g := &MockGenerator{}
