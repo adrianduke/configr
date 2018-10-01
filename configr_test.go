@@ -28,7 +28,7 @@ func addUnMarshalers(m Manager, sources ...Source) {
 	}
 }
 
-func Test_ItReturnsErrorOnFirstUnMarshalerError(t *testing.T) {
+func Test_Parse_ItReturnsErrorOnFirstUnMarshalerError(t *testing.T) {
 	config := New()
 	s1, s2, s3 := &MockSource{}, &MockSource{}, &MockSource{}
 	setupErroringSources(s1, s2, s3)
@@ -39,7 +39,7 @@ func Test_ItReturnsErrorOnFirstUnMarshalerError(t *testing.T) {
 	assert.Equal(t, err, errors.New("!"))
 }
 
-func Test_ItDoesntSetUnmarshaldToTrueOnUnMarshalerError(t *testing.T) {
+func Test_Parse_ItDoesntSetUnmarshaldToTrueOnUnMarshalerError(t *testing.T) {
 	config := New()
 	s1, s2, s3 := &MockSource{}, &MockSource{}, &MockSource{}
 	setupErroringSources(s1, s2, s3)
@@ -50,7 +50,7 @@ func Test_ItDoesntSetUnmarshaldToTrueOnUnMarshalerError(t *testing.T) {
 	assert.Equal(t, false, config.parsed)
 }
 
-func Test_ItSetsUnmarshaldToTrueOnSuccessfulParsing(t *testing.T) {
+func Test_Parse_ItSetsUnmarshaldToTrueOnSuccessfulParsing(t *testing.T) {
 	config := New()
 	s1, s2, s3 := &MockSource{}, &MockSource{}, &MockSource{}
 	setupNonErroringSources(s1, s2, s3)
@@ -61,7 +61,7 @@ func Test_ItSetsUnmarshaldToTrueOnSuccessfulParsing(t *testing.T) {
 	assert.Equal(t, true, config.parsed)
 }
 
-func Test_ItPanicsOnFirstUnMarshalerError(t *testing.T) {
+func Test_MustParse_ItPanicsOnFirstUnMarshalerError(t *testing.T) {
 	config := New()
 	s1, s2, s3 := &MockSource{}, &MockSource{}, &MockSource{}
 	setupErroringSources(s1, s2, s3)
@@ -70,14 +70,14 @@ func Test_ItPanicsOnFirstUnMarshalerError(t *testing.T) {
 	assert.Panics(t, func() { config.MustParse() })
 }
 
-func Test_ItSetsValue(t *testing.T) {
+func Test_set_ItSetsValue(t *testing.T) {
 	config := New()
 
 	assert.NoError(t, config.set("test", 1))
 	assert.Equal(t, 1, config.cache["test"].(int))
 }
 
-func Test_ItReturnsErrorOnFirstFailingValidator(t *testing.T) {
+func Test_RegisterKey_ItReturnsErrorOnFirstFailingValidator(t *testing.T) {
 	config := New()
 	v1 := func(v interface{}) error {
 		return errors.New("!")
@@ -88,7 +88,7 @@ func Test_ItReturnsErrorOnFirstFailingValidator(t *testing.T) {
 	assert.Error(t, config.set("test", 1))
 }
 
-func Test_ItWrapsValidationErrors(t *testing.T) {
+func Test_set_ItWrapsValidationErrors(t *testing.T) {
 	config := New()
 	expectedError := NewValidationError("test", errors.New("!!!"))
 	v1 := func(v interface{}) error {
@@ -103,7 +103,7 @@ func Test_ItWrapsValidationErrors(t *testing.T) {
 	assert.EqualError(t, err, "Validation error on key 'test': !!!")
 }
 
-func Test_ItRunsValidatorsWhenSettingValue(t *testing.T) {
+func Test_set_ItRunsValidatorsWhenSettingValue(t *testing.T) {
 	config := New()
 	v1HasRun := false
 	v1 := func(v interface{}) error {
@@ -123,7 +123,7 @@ func Test_ItRunsValidatorsWhenSettingValue(t *testing.T) {
 	assert.True(t, v2HasRun)
 }
 
-func Test_ItHonoursNestedKeysRunningAllValidators(t *testing.T) {
+func Test_set_ItHonoursNestedKeysRunningAllValidators(t *testing.T) {
 	config := New()
 	v1HasRun := false
 	v1 := func(v interface{}) error {
@@ -151,7 +151,7 @@ func Test_ItHonoursNestedKeysRunningAllValidators(t *testing.T) {
 	assert.True(t, v2HasRun)
 }
 
-func Test_ItPopulatesConfigrValuesFromSource(t *testing.T) {
+func Test_Parse_ItPopulatesConfigrValuesFromSource(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 	expectedValues := map[string]interface{}{
@@ -168,7 +168,7 @@ func Test_ItPopulatesConfigrValuesFromSource(t *testing.T) {
 	assert.Equal(t, expectedValues, config.cache)
 }
 
-func Test_ItReturnsErrorFromSet(t *testing.T) {
+func Test_AddSource_ItReturnsErrorFromSet(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 	expectedValues := map[string]interface{}{
@@ -187,7 +187,7 @@ func Test_ItReturnsErrorFromSet(t *testing.T) {
 	assert.Error(t, config.Parse())
 }
 
-func Test_ItOverwritesValuesFromHigherPrioritySources(t *testing.T) {
+func Test_Parse_ItOverwritesValuesFromHigherPrioritySources(t *testing.T) {
 	config := New()
 	s1, s2 := &MockSource{}, &MockSource{}
 	s1Values := map[string]interface{}{
@@ -214,7 +214,7 @@ func Test_ItOverwritesValuesFromHigherPrioritySources(t *testing.T) {
 	assert.Equal(t, expectedValues, config.cache)
 }
 
-func Test_ItDoesntPanicOnValueNotRegisteredErrors(t *testing.T) {
+func Test_MustParse_ItDoesntPanicOnValueNotRegisteredErrors(t *testing.T) {
 	config := New()
 
 	s1 := &MockSource{}
@@ -231,7 +231,7 @@ func Test_ItDoesntPanicOnValueNotRegisteredErrors(t *testing.T) {
 	assert.NotPanics(t, func() { config.MustParse() })
 }
 
-func Test_ItRetrivesNestedValues(t *testing.T) {
+func Test_Get_ItRetrivesNestedValues(t *testing.T) {
 	config := New()
 	config.cache = map[string]interface{}{
 		"t1": map[string]interface{}{
@@ -264,7 +264,7 @@ func Test_ItRetrivesNestedValues(t *testing.T) {
 	assert.Equal(t, t331Expected, t331)
 }
 
-func Test_ItErrorsIfNotAllRequiredValuesAreFound(t *testing.T) {
+func Test_Parse_ItErrorsIfNotAllRequiredValuesAreFound(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 	s1Values := map[string]interface{}{
@@ -288,7 +288,7 @@ func Test_ItErrorsIfNotAllRequiredValuesAreFound(t *testing.T) {
 	assert.Equal(t, ErrRequiredKeysMissing{"t2", "t3.t31"}.Error(), config.Parse().Error())
 }
 
-func Test_ItRespectsNestedValuesFromMultipleSources(t *testing.T) {
+func Test_Parse_ItRespectsNestedValuesFromMultipleSources(t *testing.T) {
 	config := New()
 	s1, s2 := &MockSource{}, &MockSource{}
 	s1Values := map[string]interface{}{
@@ -339,7 +339,7 @@ func Test_ItRespectsNestedValuesFromMultipleSources(t *testing.T) {
 	assert.Equal(t, expectedValues, config.cache)
 }
 
-func Test_ItHandlesPathStyleKeysToSetValues(t *testing.T) {
+func Test_set_ItHandlesPathStyleKeysToSetValues(t *testing.T) {
 	config := New()
 	t1t11 := "1"
 	t1t12t121 := int(2)
@@ -363,7 +363,7 @@ func Test_ItHandlesPathStyleKeysToSetValues(t *testing.T) {
 	assert.Equal(t, expectedValues, config.cache)
 }
 
-func Test_ItErrorsIfYouTryGetBeforeParsing(t *testing.T) {
+func Test_Get_ItErrorsIfYouTryGetBeforeParsing(t *testing.T) {
 	config := New()
 
 	_, err := config.Get("test")
@@ -371,7 +371,7 @@ func Test_ItErrorsIfYouTryGetBeforeParsing(t *testing.T) {
 	assert.Equal(t, ErrParseHasntBeenCalled, err)
 }
 
-func Test_ItReturnsDefaultValueIfNoValueFoundFromSources(t *testing.T) {
+func Test_Get_ItReturnsDefaultValueIfNoValueFoundFromSources(t *testing.T) {
 	config := New()
 	config.parsed = true
 
@@ -383,7 +383,7 @@ func Test_ItReturnsDefaultValueIfNoValueFoundFromSources(t *testing.T) {
 	assert.Equal(t, 1, value.(int))
 }
 
-func Test_ItReturnsDefaultValuesInSubtree(t *testing.T) {
+func Test_Get_ItReturnsDefaultValuesInSubtree(t *testing.T) {
 	config := New()
 	config.parsed = true
 
@@ -396,7 +396,7 @@ func Test_ItReturnsDefaultValuesInSubtree(t *testing.T) {
 	assert.True(t, value.(map[string]interface{})["t1"].(bool))
 }
 
-func Test_ItReturnsErrorIfNoRegisteredValuesToGenerate(t *testing.T) {
+func Test_GenerateBlank_ItReturnsErrorIfNoRegisteredValuesToGenerate(t *testing.T) {
 	config := New()
 	g := &MockGenerator{}
 
@@ -404,7 +404,7 @@ func Test_ItReturnsErrorIfNoRegisteredValuesToGenerate(t *testing.T) {
 	assert.Equal(t, ErrNoRegisteredValues, err)
 }
 
-func Test_ItPassesANestedMapOfConfigNamesAndDefaults(t *testing.T) {
+func Test_GenerateBlank_ItPassesANestedMapOfConfigNamesAndDefaults(t *testing.T) {
 	config := New()
 	g := &MockGenerator{}
 	t1 := int(1)
@@ -436,7 +436,7 @@ func Test_ItPassesANestedMapOfConfigNamesAndDefaults(t *testing.T) {
 	g.AssertExpectations(t)
 }
 
-func Test_ItIsCaseSensitiveByDefault(t *testing.T) {
+func Test_Parse_ItIsCaseSensitiveByDefault(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 	expectedValues := map[string]interface{}{
@@ -453,7 +453,7 @@ func Test_ItIsCaseSensitiveByDefault(t *testing.T) {
 	assert.Equal(t, expectedValues, config.cache)
 }
 
-func Test_ItIsCaseInensitive(t *testing.T) {
+func Test_Parse_ItIsCaseInensitive(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 	values := map[string]interface{}{
@@ -476,7 +476,7 @@ func Test_ItIsCaseInensitive(t *testing.T) {
 	assert.Equal(t, expectedValues, config.cache)
 }
 
-func Test_ItPassesAllKeysToUnmarshalToSource(t *testing.T) {
+func Test_Parse_ItPassesAllKeysToUnmarshalToSource(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 
@@ -504,7 +504,7 @@ func Test_ItPassesAllKeysToUnmarshalToSource(t *testing.T) {
 	s1.AssertExpectations(t)
 }
 
-func Test_ItPassesAValidKeySplittingFuncToSource(t *testing.T) {
+func Test_Parse_ItPassesAValidKeySplittingFuncToSource(t *testing.T) {
 	config := New()
 	s1 := &MockSource{}
 
@@ -529,13 +529,13 @@ func Test_ItPassesAValidKeySplittingFuncToSource(t *testing.T) {
 	assert.Equal(t, expectedValue, result)
 }
 
-func Test_ItReturnsErrorIfConfigrHasntBeenParsed(t *testing.T) {
+func Test_Unmarshal_ItReturnsErrorIfConfigrHasntBeenParsed(t *testing.T) {
 	config := New()
 
 	assert.Equal(t, ErrParseHasntBeenCalled, config.Unmarshal(&struct{}{}))
 }
 
-func Test_ItReturnsAnyGetErrors(t *testing.T) {
+func Test_UnmarshalKey_ItReturnsAnyGetErrors(t *testing.T) {
 	config := New()
 	config.parsed = true
 
