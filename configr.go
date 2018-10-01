@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 )
 
@@ -42,6 +43,9 @@ type Config interface {
 	Bool(string) (bool, error)
 	Int(string) (int, error)
 	Float64(string) (float64, error)
+
+	Unmarshal(interface{}) error
+	UnmarshalKey(string, interface{}) error
 }
 
 // Source is a source of configuration keys and values, calling unmarshal should
@@ -489,6 +493,54 @@ func (c *Configr) SetDescriptionWrapper(wrapper string) {
 }
 func (c *Configr) SetIsCaseSensitive(isCaseSensitive bool) {
 	c.isCaseInsensitive = !isCaseSensitive
+}
+
+// Unmarshals all parsed values into struct, uses `configr` struct tag for
+// alternative property name. e.g.
+//
+//   type Example struct {
+//       property1 string `configr:"myproperty1"`
+//   }
+//
+func Unmarshal(destination interface{}) error {
+	return globalConfigr.Unmarshal(destination)
+}
+func (c *Configr) Unmarshal(destination interface{}) error {
+	return c.UnmarshalKey("", destination)
+}
+
+// UnmarshalKey unmarshals a subtree of parsed values from Key into a struct.
+// Key follows the same rules as Get.
+func UnmarshalKey(key string, destination interface{}) error {
+	return globalConfigr.UnmarshalKey(key, destination)
+}
+func (c *Configr) UnmarshalKey(key string, destination interface{}) error {
+	if !c.Parsed() {
+		return ErrParseHasntBeenCalled
+	}
+
+	decoderConfig := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		WeaklyTypedInput: true,
+		Result:           destination,
+		TagName:          "configr",
+	}
+
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		return err
+	}
+
+	if key != "" {
+		subTree, err := c.Get(key)
+		if err != nil {
+			return err
+		}
+
+		return decoder.Decode(subTree)
+	}
+
+	return decoder.Decode(c.cache)
 }
 
 func NewKeySplitter(delimeter string) KeySplitter {

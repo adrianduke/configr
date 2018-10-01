@@ -516,6 +516,19 @@ func Test_ItPassesAValidKeySplittingFuncToSource(t *testing.T) {
 	assert.Equal(t, expectedValue, result)
 }
 
+func Test_ItReturnsErrorIfConfigrHasntBeenParsed(t *testing.T) {
+	config := New()
+
+	assert.Equal(t, ErrParseHasntBeenCalled, config.Unmarshal(&struct{}{}))
+}
+
+func Test_ItReturnsAnyGetErrors(t *testing.T) {
+	config := New()
+	config.parsed = true
+
+	assert.Equal(t, ErrKeyNotFound, config.UnmarshalKey("t1", &struct{}{}))
+}
+
 type MockGenerator struct {
 	mock.Mock
 }
