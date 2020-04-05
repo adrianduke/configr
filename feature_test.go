@@ -260,6 +260,43 @@ func Test_ItUnmarshalsIntoAStruct(t *testing.T) {
 	assert.Equal(t, expectedTestConfig, testConfig)
 }
 
+func Test_ItRegistersKeysAndDefaultsFromStruct(t *testing.T) {
+	type Email struct {
+		FromAddress string `configr:",required"`
+		Subject     string
+		MaxRetries  int `configr:"maximumRetries"`
+		RetryOnFail bool
+	}
+	defaultEmail := Email{
+		RetryOnFail: true,
+	}
+
+	expectedEmail := Email{
+		FromAddress: "test@testing.com",
+		Subject:     "",
+		MaxRetries:  3,
+		RetryOnFail: true,
+	}
+
+	source := MemorySource{
+		values: map[string]interface{}{
+			"fromAddress":    "test@testing.com",
+			"maximumRetries": 3,
+		},
+	}
+
+	config := configr.New()
+	config.AddSource(source)
+	config.RegisterFromStruct(&defaultEmail, configr.ToLowerCamelCase)
+
+	assert.NoError(t, config.Parse())
+
+	email := Email{}
+	assert.NoError(t, config.Unmarshal(&email))
+
+	assert.Equal(t, expectedEmail, email)
+}
+
 type MemorySource struct {
 	values map[string]interface{}
 }
