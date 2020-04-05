@@ -15,20 +15,57 @@ Configr provides an abstraction above configuration sources, allowing you to use
 - **Custom blank config encoder support:** Implement an encoder for any data format and have a blank config generated in it
 - **Type conversion support:** Your config has string "5" but you want an int 5? No problem
 - **Comes pre-baked with JSON, TOML file support and Environmental Variables**
+- **Initialise from structs:** Pass a struct (optionally with values) to register keys and set defaults painlessly
+- **Unmarshal straight to structs:** Unmarshall the entire tree or sub-tree directly into a struct
 - **Satisfies github.com/yourheropaul/inj:Datasource:** Allows you to bypass the manual wiring of config values to struct properties (see below)
 
 Built for a project at [HomeMade Digital](http://homemadedigital.com/), configrs primary goal was to eliminate user error when deploying projects with heavy configuration needs. The inclusion of required key support, value validators, descriptions and blank config generator allowed us to reduce pain for seperated client ops teams when deploying our apps. Our secondary goal was flexible configuration sources be it pulling from Mongo Document, DynamoDB Table, JSON or TOML files.
 
 ## Example
 
+### Register From and Unmarshal To Structs
+
+```go
+type Email struct {
+	FromAddress string `configr:"From,required"`
+	Subject     string
+	MaxRetries  int
+	RetryOnFail bool
+}
+
+defaultEmailConfig := Email{
+	RetryOnFail: true,
+	MaxRetries: 3,
+}
+configr.RegisterFromStruct(&defaultEmailConfig)
+
+// {
+// 	"Subject": "Hello world!",
+// 	"From": "configr@github.com",
+// }
+configr.AddSource(someSourceLikeJSON)
+if err := configr.Parse(); err != nil {
+	...
+}
+
+email := Email{}
+if err := configr.Unmarshal(&email); err != nil {
+	...
+}
+fmt.Println(email.RetryOnFail) // true
+fmt.Println(email.MaxRetries)  // 3
+fmt.Println(email.FromAddress) // configr@github.com
+fmt.Println(email.Subject)     // Hello world!
+```
+
 ### Simple JSON File
 
 Pre register some keys to expect from your configuration sources (typically via init() for small projects, or via your own object initiation system for larger projects):
 ```go
-	configr.RequireKey("email.fromAddress", "Email from address")
-	configr.RequireKey("email.subject", "Email subject")
-	configr.RegisterKey("email.retryOnFail", "Retry sending email if it fails", false)
-	configr.RegisterKey("email.maxRetries", "How many times to retry email resending", 3)
+configr.RequireKey("email.fromAddress", "Email from address")
+configr.RequireKey("email.subject", "Email subject")
+configr.RegisterKey("email.retryOnFail", "Retry sending email if it fails", false)
+configr.RegisterKey("email.maxRetries", "How many times to retry email resending", 3)
 ```
 
 Create some configuration:
@@ -45,22 +82,22 @@ Create some configuration:
 
 Add a source:
 ```go
-	configr.AddSource(configr.NewFile("/tmp/config.json"))
+configr.AddSource(configr.NewFile("/tmp/config.json"))
 ```
 
 Parse your config:
 ```go
-	if err := configr.Parse(); err != nil {
-		...
-	}
+if err := configr.Parse(); err != nil {
+	...
+}
 ```
 
 And use at your own leisure:
 ```go
-	fromAddress, err := configr.String("email.fromAddress")
-	if err != nil {
-		...
-	}
+fromAddress, err := configr.String("email.fromAddress")
+if err != nil {
+	...
+}
 ```
 
 ### Inj Datasource
@@ -69,10 +106,10 @@ Continuing from the simple JSON example above, you can use http://github.com/you
 
 Pre register keys:
 ```go
-	configr.RequireKey("email.fromAddress", "Email from address")
-	configr.RequireKey("email.subject", "Email subject")
-	configr.RegisterKey("email.retryOnFail", "Retry sending email if it fails", false)
-	configr.RegisterKey("email.maxRetries", "How many times to retry email resending", 3)
+configr.RequireKey("email.fromAddress", "Email from address")
+configr.RequireKey("email.subject", "Email subject")
+configr.RegisterKey("email.retryOnFail", "Retry sending email if it fails", false)
+configr.RegisterKey("email.maxRetries", "How many times to retry email resending", 3)
 ```
 
 Add the relevant inj struct tags with their corresponding key paths:
@@ -87,33 +124,33 @@ type Email struct {
 
 Add and setup your source (assume we're using the same config json as above):
 ```go
-	configr.AddSource(configr.NewFile("/tmp/config.json"))
+configr.AddSource(configr.NewFile("/tmp/config.json"))
 ```
 
 Parse your config:
 ```go
-	if err := configr.Parse(); err != nil {
-		...
-	}
+if err := configr.Parse(); err != nil {
+	...
+}
 ```
 
 Setup inj with configr as its Datasource and commence the magic:
 ```go
-	email := Email{}
-	inj.Provide(&email) // Informs inj to perform DI on given instance
-	inj.AddDatasource(configr.GetConfigr()) // Provides inj with a datasource to query
+email := Email{}
+inj.Provide(&email) // Informs inj to perform DI on given instance
+inj.AddDatasource(configr.GetConfigr()) // Provides inj with a datasource to query
 
-	if valid, errors := inj.Assert(); !valid { // Triggers the inj DI process
-		...
-	}
+if valid, errors := inj.Assert(); !valid { // Triggers the inj DI process
+	...
+}
 ```
 
 Marvel at the ease of auto-wiring:
 ```go
-	fmt.Println("> Email Address:", email.FromAddress)
-	fmt.Println("> Subject:", email.Subject)
-	fmt.Println("> Max Retries:", email.MaxRetries)
-	fmt.Println("> Retry on Fail:", email.RetryOnFail)
+fmt.Println("> Email Address:", email.FromAddress)
+fmt.Println("> Subject:", email.Subject)
+fmt.Println("> Max Retries:", email.MaxRetries)
+fmt.Println("> Retry on Fail:", email.RetryOnFail)
 ```
 
 ```
@@ -126,6 +163,10 @@ Marvel at the ease of auto-wiring:
 More examples can be found in the `examples/` dir.
 
 ## Changes
+
+**v0.6.0**
+- Add support to register and require keys directly from structs
+- Add support to unmarshal partial and full config tree into struct
 
 **v0.5.0**
 - Remove `KeysToUnmarshal` from the `Source` interface, broke adapter and generally was unncessary. Functionality has been squashed into the `Unmarhsal` method. Any existing sources will need to be updated to accept the 2 new arguments on `Unmarshal`.

@@ -8,11 +8,21 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 )
 
+const (
+	tagKeyName  = "configr"
+	tagRequired = "required"
+)
+
 type Manager interface {
+	RegisterFromStruct(interface{}, ...NameToKeyFunc) error
+
 	RegisterKey(string, string, interface{}, ...Validator)
 	RequireKey(string, string, ...Validator)
 
@@ -31,6 +41,11 @@ type Validator func(interface{}) error
 //   Out: []string("person", "height", "inches")
 type KeySplitter func(string) []string
 
+// Converts a Struct Name or Field into an appropriate key name:
+//    In: "FromAddress"
+//    Out: "fromAddress"
+type NameToKeyFunc func(string) string
+
 type Config interface {
 	Parse() error
 	Parsed() bool
@@ -42,6 +57,9 @@ type Config interface {
 	Bool(string) (bool, error)
 	Int(string) (int, error)
 	Float64(string) (float64, error)
+
+	Unmarshal(interface{}) error
+	UnmarshalKey(string, interface{}) error
 }
 
 // Source is a source of configuration keys and values, calling unmarshal should
@@ -71,6 +89,22 @@ type ValidationError struct {
 
 func (v ValidationError) Error() string {
 	return "Validation error on key '" + v.Key + "': " + v.Err.Error()
+}
+
+type InvalidTypeError struct {
+	Type reflect.Type
+}
+
+func (e InvalidTypeError) Error() string {
+	if e.Type == nil {
+		return "configr: Invalid type (nil)"
+	}
+
+	if e.Type.Kind() != reflect.Ptr {
+		return "configr: Invalid type (non-pointer " + e.Type.String() + ")"
+	}
+
+	return "configr: Invalid type (nil " + e.Type.String() + ")"
 }
 
 type Configr struct {
@@ -139,6 +173,7 @@ func (c *Configr) RegisterKey(name, description string, defaultVal interface{}, 
 
 	if defaultVal != nil {
 		c.defaultValues[name] = defaultVal
+		c.cache = c.mergeMap(name, defaultVal, c.cache)
 	}
 
 	if len(validators) > 0 {
@@ -267,6 +302,9 @@ func (c *Configr) mergeMap(key string, value interface{}, targetMap map[string]i
 		if len(path) == 2 {
 			targetMap = c.traverseKeyPath(path[0], path[1], value, targetMap)
 		} else {
+			if c.isCaseInsensitive {
+				key = strings.ToLower(key)
+			}
 			targetMap[key] = value
 		}
 	}
@@ -364,10 +402,6 @@ func (c *Configr) get(key string) (interface{}, error) {
 				return val, nil
 			}
 		}
-	}
-
-	if defaultValue, found := c.defaultValues[key]; found {
-		return defaultValue, nil
 	}
 
 	return nil, ErrKeyNotFound
@@ -491,8 +525,142 @@ func (c *Configr) SetIsCaseSensitive(isCaseSensitive bool) {
 	c.isCaseInsensitive = !isCaseSensitive
 }
 
+// Unmarshals all parsed values into struct, uses `configr` struct tag for
+// alternative property name. e.g.
+//
+//   type Example struct {
+//       property1 string `configr:"myproperty1"`
+//   }
+//
+func Unmarshal(destination interface{}) error {
+	return globalConfigr.Unmarshal(destination)
+}
+func (c *Configr) Unmarshal(destination interface{}) error {
+	return c.UnmarshalKey("", destination)
+}
+
+// UnmarshalKey unmarshals a subtree of parsed values from Key into a struct.
+// Key follows the same rules as Get.
+func UnmarshalKey(key string, destination interface{}) error {
+	return globalConfigr.UnmarshalKey(key, destination)
+}
+func (c *Configr) UnmarshalKey(key string, destination interface{}) error {
+	if !c.Parsed() {
+		return ErrParseHasntBeenCalled
+	}
+
+	decoderConfig := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		WeaklyTypedInput: true,
+		Result:           destination,
+		TagName:          "configr",
+	}
+
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
+	if err != nil {
+		return err
+	}
+
+	if key != "" {
+		subTree, err := c.Get(key)
+		if err != nil {
+			return err
+		}
+
+		return decoder.Decode(subTree)
+	}
+
+	return decoder.Decode(c.cache)
+}
+
+func RegisterFromStruct(structPtr interface{}, fieldToKeyFunc ...NameToKeyFunc) error {
+	return globalConfigr.RegisterFromStruct(structPtr, fieldToKeyFunc...)
+}
+func (c *Configr) RegisterFromStruct(structPtr interface{}, fieldToKeyFunc ...NameToKeyFunc) error {
+	reflectValue := reflect.ValueOf(structPtr)
+	if reflectValue.Kind() != reflect.Ptr ||
+		reflectValue.IsNil() {
+
+		return InvalidTypeError{reflectValue.Type()}
+	}
+
+	c.processFields([]string{}, structPtr, fieldToKeyFunc...)
+
+	return nil
+}
+
+func (c *Configr) processFields(path []string, strut interface{}, fieldToKeyFunc ...NameToKeyFunc) {
+	reflectType, reflectValue := c.fetchTypeAndValue(strut)
+
+	for i := 0; i < reflectType.NumField(); i++ {
+		c.processField(path, reflectType.Field(i), reflectValue.Field(i), fieldToKeyFunc...)
+	}
+}
+
+func (c *Configr) fetchTypeAndValue(strut interface{}) (reflect.Type, reflect.Value) {
+	if reflect.ValueOf(strut).Kind() == reflect.Ptr {
+		return reflect.TypeOf(strut).Elem(), reflect.ValueOf(strut).Elem()
+	}
+
+	return reflect.TypeOf(strut), reflect.ValueOf(strut)
+}
+
+func (c *Configr) processField(path []string, field reflect.StructField, value reflect.Value, fieldToKeyFunc ...NameToKeyFunc) {
+	tagValue := field.Tag.Get(tagKeyName)
+	tagParts := strings.Split(tagValue, ",")
+
+	name := c.pickFieldName(field.Name, tagParts[0], fieldToKeyFunc...)
+	isRequired := c.isRequiredField(tagParts[1:])
+
+	if field.Type.Kind() == reflect.Struct {
+		c.processFields(append(path, name), value.Interface(), fieldToKeyFunc...)
+	} else {
+		name = strings.Join(append(path, name), c.keyDelimeter)
+		if isRequired {
+			c.RequireKey(name, "")
+		} else {
+			c.RegisterKey(name, "", value.Interface())
+		}
+	}
+}
+
+func (c *Configr) pickFieldName(fieldName string, tagName string, fieldToKeyFunc ...NameToKeyFunc) string {
+	if tagName != "" {
+		return tagName
+	}
+
+	if fieldToKeyFunc != nil && len(fieldToKeyFunc) > 0 && fieldToKeyFunc[0] != nil {
+		return fieldToKeyFunc[0](fieldName)
+	}
+
+	if c.isCaseInsensitive {
+		return strings.ToLower(fieldName)
+	}
+
+	return fieldName
+}
+
+func (c *Configr) isRequiredField(parts []string) bool {
+	var required bool
+	for _, tag := range parts {
+		if tag == tagRequired {
+			required = true
+		}
+	}
+
+	return required
+}
+
 func NewKeySplitter(delimeter string) KeySplitter {
 	return func(key string) []string {
 		return strings.Split(key, delimeter)
 	}
+}
+
+func ToLowerCamelCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	r, n := utf8.DecodeRuneInString(s)
+	return string(unicode.ToLower(r)) + s[n:]
 }

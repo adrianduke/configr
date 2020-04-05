@@ -1,0 +1,14 @@
+{
+	"user": {
+		"username": "harry123",
+		"address": {
+			"line1": "1 end of the road",
+			"zipcode": "abc123"
+		}
+	},
+	"email": {
+		"fromAddress": "my@email.com",
+		"subject": "A Subject",
+		"retryOnFail": "false"
+	}
+}

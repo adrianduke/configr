@@ -201,3 +201,106 @@ func Test_ItParsesValuesFromEnvironmentalVariables(t *testing.T) {
 	assert.Equal(t, true, t2t22t221)
 	assert.Equal(t, 3, t3)
 }
+
+func Test_ItUnmarshalsIntoAStruct(t *testing.T) {
+	type T22 struct {
+		T221 bool
+	}
+	type T2 struct {
+		T21 int
+		T22 T22
+	}
+	type TestConfig struct {
+		T1 string
+		T2 T2
+		T3 string `configr:"t4"`
+		T5 bool
+	}
+
+	expectedTestConfig := TestConfig{
+		T1: "1",
+		T2: T2{
+			T21: 2,
+			T22: T22{
+				T221: true,
+			},
+		},
+		T3: "4",
+		T5: true,
+	}
+
+	source := MemorySource{
+		values: map[string]interface{}{
+			"t1": "1",
+			"t2": map[string]interface{}{
+				"t21": 2,
+				"t22": map[string]interface{}{
+					"t221": true,
+				},
+			},
+			"t4": "4",
+		},
+	}
+
+	config := configr.New()
+	config.AddSource(source)
+
+	config.RequireKey("t1", "")
+	config.RequireKey("t2.t21", "")
+	config.RequireKey("t2.t22.t221", "")
+	config.RegisterKey("t3", "", 3)
+	config.RegisterKey("t4", "", "")
+	config.RegisterKey("t5", "", true)
+
+	assert.NoError(t, config.Parse())
+
+	testConfig := TestConfig{}
+	assert.NoError(t, config.Unmarshal(&testConfig))
+
+	assert.Equal(t, expectedTestConfig, testConfig)
+}
+
+func Test_ItRegistersKeysAndDefaultsFromStruct(t *testing.T) {
+	type Email struct {
+		FromAddress string `configr:",required"`
+		Subject     string
+		MaxRetries  int `configr:"maximumRetries"`
+		RetryOnFail bool
+	}
+	defaultEmail := Email{
+		RetryOnFail: true,
+	}
+
+	expectedEmail := Email{
+		FromAddress: "test@testing.com",
+		Subject:     "",
+		MaxRetries:  3,
+		RetryOnFail: true,
+	}
+
+	source := MemorySource{
+		values: map[string]interface{}{
+			"fromAddress":    "test@testing.com",
+			"maximumRetries": 3,
+		},
+	}
+
+	config := configr.New()
+	config.AddSource(source)
+	config.RegisterFromStruct(&defaultEmail, configr.ToLowerCamelCase)
+
+	assert.NoError(t, config.Parse())
+
+	email := Email{}
+	assert.NoError(t, config.Unmarshal(&email))
+
+	assert.Equal(t, expectedEmail, email)
+}
+
+type MemorySource struct {
+	values map[string]interface{}
+}
+
+func (m MemorySource) Unmarshal(_ []string, _ configr.KeySplitter) (map[string]interface{}, error) {
+	return m.values, nil
+}
