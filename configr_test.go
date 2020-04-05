@@ -542,6 +542,234 @@ func Test_UnmarshalKey_ItReturnsAnyGetErrors(t *testing.T) {
 	assert.Equal(t, ErrKeyNotFound, config.UnmarshalKey("t1", &struct{}{}))
 }
 
+func Test_RegisterFromStruct_ReturnsErrorIfArgIsntPointerToStruct(t *testing.T) {
+	config := New()
+	testCases := []struct {
+		name  string
+		value interface{}
+		err   string
+	}{
+		{name: "int(1)", value: 1, err: "configr: Invalid type (non-pointer int)"},
+		{name: "struct{}", value: struct{}{}, err: "configr: Invalid type (non-pointer struct {})"},
+		{name: "bool(true)", value: true, err: "configr: Invalid type (non-pointer bool)"},
+		{name: "map[string]interface{}{}", value: map[string]interface{}{}, err: "configr: Invalid type (non-pointer map[string]interface {})"},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.EqualError(t, config.RegisterFromStruct(testCase.value), testCase.err)
+		})
+	}
+}
+
+func Test_RegisterFromStruct_RegistersStructPropertiesAsKeys(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string
+		T2 bool
+		T3 int64
+		T4 float64
+	}{}
+
+	expectedRegisteredKeys := map[string]string{
+		"T1": "",
+		"T2": "",
+		"T3": "",
+		"T4": "",
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedRegisteredKeys, config.registeredKeys)
+}
+
+func Test_RegisterFromStruct_RegistersStructPropertiesAsKeysCaseInsensitive(t *testing.T) {
+	config := New()
+	config.SetIsCaseSensitive(false)
+
+	testStruct := struct {
+		T1 string
+		T2 bool
+		T3 int64
+		T4 float64
+	}{}
+
+	expectedRegisteredKeys := map[string]string{
+		"t1": "",
+		"t2": "",
+		"t3": "",
+		"t4": "",
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedRegisteredKeys, config.registeredKeys)
+}
+
+func Test_RegisterFromStruct_RegistersStructPropertiesUsingTagname(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string  `configr:"T1"`
+		T2 bool    `configr:"cat"`
+		T3 int64   `configr:"tee3"`
+		T4 float64 `configr:"float64"`
+	}{}
+
+	expectedRegisteredKeys := map[string]string{
+		"T1":      "",
+		"cat":     "",
+		"tee3":    "",
+		"float64": "",
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedRegisteredKeys, config.registeredKeys)
+}
+
+func Test_RegisterFromStruct_RegistersRequiredKeysFromPorpoertiesUsingTag(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string  `configr:",required"`
+		T2 bool    `configr:"t2,required"`
+		T3 int64   `configr:",,required,squashed"`
+		T4 float64 `configr:"t4,squashed,required"`
+		T5 string
+	}{}
+
+	expectedRequiredKeys := map[string]struct{}{
+		"T1": struct{}{},
+		"t2": struct{}{},
+		"T3": struct{}{},
+		"t4": struct{}{},
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedRequiredKeys, config.requiredKeys)
+}
+
+func Test_RegisterFromStruct_UsesValueInStructPropertyAsDefaultForNonRequired(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string
+		T2 bool
+		T3 int64
+		T4 float64
+	}{
+		T1: "defaultValue",
+		T2: true,
+		T3: 1337,
+	}
+
+	expectedDefaultValues := map[string]interface{}{
+		"T1": "defaultValue",
+		"T2": true,
+		"T3": int64(1337),
+		"T4": 0.0,
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedDefaultValues, config.defaultValues)
+}
+
+func Test_RegisterFromStruct_SupportsEmbeddedStructs(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string
+		T2 struct {
+			T2T1 string
+		}
+		T3 struct {
+			T3T1 int
+			T3T2 struct {
+				T3T2T1 string
+			}
+		}
+	}{}
+
+	expectedRegisteredKeys := map[string]string{
+		"T1":             "",
+		"T2.T2T1":        "",
+		"T3.T3T1":        "",
+		"T3.T3T2.T3T2T1": "",
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedRegisteredKeys, config.registeredKeys)
+}
+
+func Test_RegisterFromStruct_SupportsTagsOnEmbeddedStructs(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string
+		T2 struct {
+			T2T1 string
+		} `configr:"tee2"`
+		T3 struct {
+			T3T1 int `configr:"inty"`
+			T3T2 struct {
+				T3T2T1 string `configr:"tip"`
+			}
+		}
+	}{}
+
+	expectedRegisteredKeys := map[string]string{
+		"T1":          "",
+		"tee2.T2T1":   "",
+		"T3.inty":     "",
+		"T3.T3T2.tip": "",
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedRegisteredKeys, config.registeredKeys)
+}
+
+func Test_RegisterFromStruct_SupportsEmbeddedStructsWithDefaultValues(t *testing.T) {
+	config := New()
+	testStruct := struct {
+		T1 string
+		T2 struct {
+			T2T1 string
+		}
+		T3 struct {
+			T3T1 int
+			T3T2 struct {
+				T3T2T1 string
+			}
+		}
+		T4 struct {
+			T4T1 string
+		}
+	}{
+		T2: struct{ T2T1 string }{T2T1: "default"},
+		T3: struct {
+			T3T1 int
+			T3T2 struct{ T3T2T1 string }
+		}{
+			T3T1: -5,
+			T3T2: struct{ T3T2T1 string }{
+				T3T2T1: "another default",
+			},
+		},
+	}
+
+	expectedDefaultValues := map[string]interface{}{
+		"T1":             "",
+		"T2.T2T1":        "default",
+		"T3.T3T1":        -5,
+		"T3.T3T2.T3T2T1": "another default",
+		"T4.T4T1":        "",
+	}
+
+	config.RegisterFromStruct(&testStruct)
+
+	assert.Equal(t, expectedDefaultValues, config.defaultValues)
+}
+
 type MockGenerator struct {
 	mock.Mock
 }
